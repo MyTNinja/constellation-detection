@@ -1,0 +1,6 @@
+# Lightweight requirements for Google Colab execution.
+# Note: Preinstalled PyTorch/torchvision in Google Colab are intentionally omitted
+# to preserve native GPU/CUDA compatibility.
+
+# Install the local package in editable mode (pulls core CV/scientific dependencies)
+-e .
