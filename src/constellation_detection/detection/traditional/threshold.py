@@ -159,8 +159,8 @@ def detect_stars_global_threshold(
             cx = float(moments["m10"] / moments["m00"])
             cy = float(moments["m01"] / moments["m00"])
         else:
-            cx = float(cnt[0][0][0])
-            cy = float(cnt[0][0][1])
+            cx = float(np.mean(cnt[:, 0, 0]))
+            cy = float(np.mean(cnt[:, 0, 1]))
 
         ix = int(np.clip(round(cx), 0, width - 1))
         iy = int(np.clip(round(cy), 0, height - 1))
