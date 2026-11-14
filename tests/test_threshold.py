@@ -122,14 +122,20 @@ def test_nms_integration_suppresses_nearby_secondary_detection() -> None:
 
 
 def test_zero_moment_fallback_and_score_formula() -> None:
-    """Zero-moment contours fall back to cnt[0][0] and follow exact score formula."""
+    """Zero-moment contours fall back to mean of contour points and follow exact score formula."""
     image = np.zeros((64, 64), dtype=np.uint8)
-    cv2.circle(image, (32, 28), radius=2, color=255, thickness=-1)
+    # Asymmetric L-shaped bright blob so vertex-mean centroid != area-moment centroid != first point
+    image[26:32, 30:33] = 255
+    image[30:32, 33:38] = 255
 
     zero_moments = {"m00": 0.0, "m10": 0.0, "m01": 0.0}
-    with patch("cv2.moments", return_value=zero_moments):
+    with patch(
+        "constellation_detection.detection.traditional.threshold.cv2.moments",
+        return_value=zero_moments,
+    ) as mock_moments:
         result = detect_stars_global_threshold(image)
 
+    mock_moments.assert_called_once()
     stars = result["stars_xyf"]
     assert stars.shape == (1, 3)
 
@@ -140,8 +146,14 @@ def test_zero_moment_fallback_and_score_formula() -> None:
     assert len(contours) == 1
     cnt = contours[0]
     area = float(cv2.contourArea(cnt))
-    expected_cx = float(cnt[0][0][0])
-    expected_cy = float(cnt[0][0][1])
+    real_moments = cv2.moments(cnt)
+    real_cx = float(real_moments["m10"] / real_moments["m00"])
+    real_cy = float(real_moments["m01"] / real_moments["m00"])
+
+    expected_cx = float(np.mean(cnt[:, 0, 0]))
+    expected_cy = float(np.mean(cnt[:, 0, 1]))
+    assert (expected_cx, expected_cy) != (float(cnt[0][0][0]), float(cnt[0][0][1]))
+    assert (expected_cx, expected_cy) != (real_cx, real_cy)
     ix = round(expected_cx)
     iy = round(expected_cy)
     expected_score = float(result["preprocessed"][iy, ix]) * math.sqrt(
