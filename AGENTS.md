@@ -23,3 +23,19 @@ This document defines the mandatory engineering and research standards for AI co
 - **Type hints and docstrings**: Use standard Python type annotations (`from __future__ import annotations`) and concise, informative docstrings explaining inputs, outputs, units/coordinate conventions, and assumptions.
 - **Minimal dependencies**: Avoid introducing new third-party libraries unless strictly justified. Rely on the core stack (NumPy, SciPy, OpenCV, scikit-image, Pandas, Matplotlib, and PyTorch).
 - **Framework restriction**: Use **PyTorch** exclusively for deep learning. **Do not introduce TensorFlow, Keras, or JAX.**
+
+## 4. Git & Review Workflow
+
+Follow this simple, human-approved Git workflow for every change:
+
+1. **Sync and branch**: Update local `main` from `origin/main`, then create a dedicated feature branch. Never commit or push directly to `main`.
+2. **Implement and test locally**: Implement the requested change and run relevant local checks (`python -m pytest` and `python -m ruff check .` when applicable).
+3. **Push branch and share compare link**: Commit and push the feature branch to `origin`, then share its GitHub compare link against `main` (`https://github.com/MyTNinja/constellation-detection/compare/main...<branch>`) so the user can request a review from ChatGPT.
+4. **Revise as requested**: Apply any requested revisions on the feature branch, push the updated branch, and share the updated compare link.
+5. **Wait for explicit user approval**: Do not merge or push anything to `main` until the user explicitly approves.
+6. **Fast-forward merge on approval**: After explicit user approval, update local `main`, fast-forward merge the approved feature branch into `main`, and push `main`.
+7. **Roles and boundaries**:
+   - Never create a Pull Request or merge automatically.
+   - ChatGPT reviews and advises; the user gives final approval; Antigravity performs coding and Git operations.
+   - Do not add GitHub Actions workflows, PR templates, branch protection rules, or repository setting changes unless explicitly requested.
+   - Do not delete branches or rewrite Git history without explicit user authorization.
