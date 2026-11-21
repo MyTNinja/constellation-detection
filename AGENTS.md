@@ -21,5 +21,5 @@ This document defines the mandatory engineering and research standards for AI co
 ## 3. Code Quality & Dependencies
 
 - **Type hints and docstrings**: Use standard Python type annotations (`from __future__ import annotations`) and concise, informative docstrings explaining inputs, outputs, units/coordinate conventions, and assumptions.
-- **Minimal dependencies**: Avoid introducing new third-party libraries unless strictly justified. Rely on the core stack (NumPy, SciPy, OpenCV, scikit-image, Pandas, Matplotlib, Pillow, PyYAML, and PyTorch).
+- **Minimal dependencies**: Avoid introducing new third-party libraries unless strictly justified. Rely on the core stack (NumPy, SciPy, OpenCV, scikit-image, Pandas, Matplotlib, and PyTorch).
 - **Framework restriction**: Use **PyTorch** exclusively for deep learning. **Do not introduce TensorFlow, Keras, or JAX.**
