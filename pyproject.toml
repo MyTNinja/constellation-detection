@@ -15,8 +15,6 @@ dependencies = [
     "scipy>=1.9",
     "scikit-image>=0.20",
     "matplotlib>=3.6",
-    "Pillow>=9.4",
-    "PyYAML>=6.0",
 ]
 
 [project.optional-dependencies]
