@@ -26,16 +26,27 @@ This document defines the mandatory engineering and research standards for AI co
 
 ## 4. Git & Review Workflow
 
-Follow this simple, human-approved Git workflow for every change:
+### Routine, low-risk changes
 
-1. **Sync and branch**: Update local `main` from `origin/main`, then create a dedicated feature branch. Never commit or push directly to `main`.
-2. **Implement and test locally**: Implement the requested change and run relevant local checks (`python -m pytest` and `python -m ruff check .` when applicable).
-3. **Push branch and share compare link**: Commit and push the feature branch to `origin`, then share its GitHub compare link against `main` (`https://github.com/MyTNinja/constellation-detection/compare/main...<branch>`) so the user can request a review from ChatGPT.
-4. **Revise as requested**: Apply any requested revisions on the feature branch, push the updated branch, and share the updated compare link.
-5. **Wait for explicit user approval**: Do not merge or push anything to `main` until the user explicitly approves.
-6. **Fast-forward merge on approval**: After explicit user approval, update local `main`, fast-forward merge the approved feature branch into `main`, and push `main`.
-7. **Roles and boundaries**:
-   - Never create a Pull Request or merge automatically.
-   - ChatGPT reviews and advises; the user gives final approval; Antigravity performs coding and Git operations.
-   - Do not add GitHub Actions workflows, PR templates, branch protection rules, or repository setting changes unless explicitly requested.
-   - Do not delete branches or rewrite Git history without explicit user authorization.
+- Work directly on `main` for clearly routine, low-risk changes (such as documentation edits, formatting, or isolated changes with narrow impact).
+- Before starting, confirm the working tree is clean and update local `main` from `origin/main`.
+- Make the change, inspect the diff and staged files, and run relevant local checks. For Python code changes, use the project's existing local environment to run relevant tests (`pytest`) and Ruff checks when available. Do not install dependencies or create a new environment without the user's approval.
+- If checks fail, fix the issue or report it. Do not commit or push a failing change.
+- After checks pass, commit and push directly to `main`. Routine changes do not require a separate ChatGPT review, branch, merge, or approval cycle (the user may request ChatGPT review when useful).
+- Keep this workflow local for Phase 1: run Python and tests on the user's PC. Do not add Colab, cloud execution, or GitHub Actions.
+
+### Larger or higher-risk changes
+
+- Use a dedicated branch for substantial, multi-step, cross-cutting, algorithmic, dependency, interface, data-format, or Phase 2 work.
+- Use one branch for the whole effort across multiple prompts; do not create a new branch for every prompt within that effort.
+- Run relevant local checks and inspect the diff before sharing a GitHub compare link against `main` (`https://github.com/MyTNinja/constellation-detection/compare/main...<branch>`) at an agreed review point or when the work is ready.
+- ChatGPT may review and advise using the compare link. Antigravity applies requested revisions on the same branch and shares an updated compare link.
+- Wait for the user's explicit approval before merging the branch into `main` or pushing that merge.
+- After approval, update local `main`, fast-forward merge the branch into `main`, and push `main`.
+
+### Boundaries
+
+- Do not create pull requests.
+- ChatGPT reviews and advises when asked; it does not commit, push, or merge. Antigravity performs coding and Git operations. The user gives final approval for larger branch merges.
+- Never force-push, rewrite Git history, delete branches, change GitHub settings, modify branch protection, install or enable extensions, or add GitHub Actions or PR templates unless the user explicitly asks.
+- Verify that only intended files are staged. Keep datasets, credentials, and generated model artifacts out of commits.
