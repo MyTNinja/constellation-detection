@@ -1,88 +1,89 @@
-# Vision-Based Constellation Detection and Recognition Using Hybrid Computer Vision and Deep Learning
+# Vision-Based Constellation Detection and Recognition
 
-## Research Objective
+A research project for detecting stars in night-sky images and, in later phases, recognizing constellation patterns from visual evidence. The project does not use GPS, compass, gyroscope, or other device sensors to identify a constellation.
 
-This project investigates and develops a hybrid pipeline for detecting stars and recognizing astronomical constellations from night-sky images. It combines:
+## Project status
 
-1. **Classical Computer Vision Baseline**: Traditional image processing and morphological/blob-detection techniques for star localization and baseline feature extraction.
-2. **Deep Learning Recognition**: PyTorch-based neural architectures for robust constellation pattern detection and classification under varying sky conditions, sensor noise, and field-of-view variations.
+**Phase 1 is complete. Phase 2, PyTorch-based star detection, has not started.**
 
-## Current Development Status
+The completed Phase 1 implementation is the traditional computer-vision baseline. It must remain available for comparison with future models. Constellation recognition, hybrid integration, and the local upload application are planned for later phases and are not implemented yet.
 
-> **Status: Foundation Stage (v0.1.0)**
->
-> The repository is currently initialized with its foundational package structure, build configuration, and portability rules.
-> **Note:** The original Phase 1 star-detection notebook has **not** yet been migrated into the modular package or `notebooks/` directory.
+## Phase 1 baseline
 
-## Technology Stack
+The reusable Python package provides:
 
-- **Language**: Python >= 3.10
-- **Computer Vision & Image Processing**: OpenCV (`opencv-python`), `scikit-image`, Pillow
-- **Scientific Computing & Data**: NumPy, SciPy, Pandas, PyYAML
-- **Deep Learning**: PyTorch (`torch`, `torchvision`) *(TensorFlow is intentionally excluded)*
-- **Visualization**: Matplotlib
-- **Testing & Quality**: `pytest`, `ruff`
+- Image loading, validation, grayscale conversion, and Gaussian smoothing.
+- Global-threshold, adaptive top-hat, and multi-scale Difference-of-Gaussians star detectors.
+- Non-maximum suppression and star coordinate extraction.
+- Detector comparison, signal-to-noise diagnostics, runtime measurements, CSV prediction export, and visualization overlays.
+- Unit tests for the image, detection, evaluation, export, and visualization code.
 
-## High-Level Architecture
+The demo compares detector outputs. The downloaded sample images do not include verified star-level annotations, so the project does **not** report detection precision, recall, or F1 yet. CSV files contain predictions only; they are not ground truth.
+
+## Repository layout
 
 ```text
-constellation-detection/
-├── notebooks/                  # Lightweight notebooks for experiments & visualization
-├── src/
-│   └── constellation_detection/
-│       ├── __init__.py         # Package metadata
-│       └── config.py           # Environment-agnostic path configuration
-├── tests/                      # Automated unit and integration tests
-├── docs/                       # Research notes and project documentation
-├── .gitignore                  # Git exclusion rules
-├── AGENTS.md                   # Engineering & research rules for AI coding agents
-├── README.md                   # Project overview and workflow guide
-├── pyproject.toml              # Package build and dependency specification
-└── requirements-colab.txt      # Lightweight installation file for Google Colab
+notebooks/
+  phase1_traditional_cv_demo.ipynb  # Runs the Phase 1 detector comparison
+scripts/
+  download_phase1_samples.py        # Optional ESA/Hubble sample downloader
+src/constellation_detection/
+  config.py                         # Configurable project, data, and output paths
+  image/                            # Image loading and preprocessing
+  detection/                        # Shared NMS and traditional detectors
+  evaluation/                       # Detector comparison and prediction exports
+  visualization/                    # Diagnostic overlays
+tests/                              # Automated tests
 ```
 
-### Design Principles
+Datasets and generated results are local artifacts and are excluded from Git. The optional sample downloader puts images in `data/raw/`; the demo writes predictions and visualizations under `outputs/`.
 
-- **Core logic in `.py` modules**: All reusable algorithms reside under `src/constellation_detection/`.
-- **Lightweight notebooks**: Notebooks in `notebooks/` orchestrate experiments and visualize results by importing the core package.
-- **Environment neutrality**: Reusable code contains no `google.colab` imports and no hardcoded `/content`, `/content/drive`, or Windows file paths.
+## Local setup
 
-## Installation
-
-### Local Development (Windows / Linux / macOS)
-
-Create and activate a Python >= 3.10 virtual environment, then install the package in editable mode:
+Use Python 3.10 or newer:
 
 ```bash
-# Core computer vision dependencies only
-pip install -e .
-
-# Include development tools (pytest, ruff)
-pip install -e ".[dev]"
-
-# Include deep-learning dependencies (PyTorch, torchvision)
-pip install -e ".[dl,dev]"
+python -m venv .venv
 ```
 
-*(For specific CUDA or CPU-only builds of PyTorch on Windows, install `torch` and `torchvision` via the official PyTorch index URL prior to running `pip install -e .`.)*
-
-### Google Colab Setup
-
-In Google Colab, PyTorch with GPU support is preinstalled. To preserve Colab's native CUDA environment while installing this package and its core dependencies:
+Activate the environment, then install the package and development tools:
 
 ```bash
-pip install -r requirements-colab.txt
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+
+# macOS / Linux
+source .venv/bin/activate
+
+python -m pip install -e ".[dev]"
 ```
 
-## Development, Execution & Storage Workflow
+To prepare the optional sample images:
 
-1. **Local Repository as Source of Truth**:
-   - All source code, module refactoring, testing, and Git commits happen in the local repository and are version-controlled via Git and GitHub.
-   - Local Windows execution is used for code development, unit testing, classical CV baselines, and CPU-based model inference.
+```bash
+python scripts/download_phase1_samples.py
+```
 
-2. **Google Colab for GPU Execution**:
-   - Heavy deep-learning training and large-scale evaluation runs are executed in Google Colab notebooks that clone/pull the repository and install the package in editable mode.
+Open `notebooks/phase1_traditional_cv_demo.ipynb` from the repository root to run the detector comparison. If no sample images are present, the notebook uses a seeded synthetic starfield for a demonstration; this synthetic image is not ground truth and must not be used to claim real-image detection accuracy.
 
-3. **Google Drive for Persistent Artifacts**:
-   - Datasets, ground-truth catalogs, trained model checkpoints (`.pt`/`.pth`), and experiment outputs are stored in Google Drive (mounted in Colab or synced locally) and excluded from Git via `.gitignore`.
-   - Directory locations are passed dynamically to `constellation_detection.config.ProjectPaths` (or configured via `CONSTELLATION_DATA_DIR` and `CONSTELLATION_OUTPUT_DIR` environment variables) so core modules remain completely agnostic to where files are hosted.
+Run the local checks with:
+
+```bash
+python -m pytest
+python -m ruff check .
+```
+
+## Google Colab
+
+`requirements-colab.txt` installs the local package without replacing Colab's preinstalled PyTorch/CUDA stack.
+
+For Phase 2, install the optional PyTorch development dependencies locally with `python -m pip install -e ".[dl,dev]"`, or use the Colab setup above.
+
+## Research rules
+
+- Keep Phase 1 detector behavior and results as the comparison baseline.
+- Keep detector/model predictions separate from independently verified annotations.
+- Do not fabricate labels or use predictions as ground truth.
+- Record experiment settings and random seeds; keep training, validation, and test data separated.
+- Use PyTorch for new deep-learning work. TensorFlow/Keras comparisons are out of scope.
+- Recognition and constellation matching are future work; detector outputs alone do not identify a constellation.
