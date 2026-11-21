@@ -253,5 +253,25 @@ def test_split_disjointness_and_dataset_audit(tmp_path: Path) -> None:
     leaky_samples[1]["split"] = "test"
     leaky_samples[1]["group_id"] = leaky_samples[0]["group_id"]
     leaky["samples"] = leaky_samples
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Group leakage"):
         verify_split_disjointness(leaky)
+
+    # Reject duplicate image_relpath, annotation_relpath, and same-split image_sha256
+    for field in ("image_relpath", "annotation_relpath"):
+        dup_rel = dict(manifest)
+        dup_samples = [dict(s) for s in manifest["samples"]]
+        dup_samples[1][field] = dup_samples[0][field]
+        dup_rel["samples"] = dup_samples
+        with pytest.raises(ValueError, match=f"Duplicate {field}"):
+            verify_split_disjointness(dup_rel)
+
+    same_split_dup = dict(manifest)
+    ss_samples = [dict(s) for s in manifest["samples"]]
+    train_indices = [i for i, s in enumerate(ss_samples) if s["split"] == "train"]
+    assert len(train_indices) >= 2
+    ss_samples[train_indices[1]]["image_sha256"] = ss_samples[train_indices[0]][
+        "image_sha256"
+    ]
+    same_split_dup["samples"] = ss_samples
+    with pytest.raises(ValueError, match="Duplicate image_sha256"):
+        verify_split_disjointness(same_split_dup)

@@ -173,3 +173,79 @@ def test_dl_model_loss_tiled_inference_and_smoke_training(tmp_path: Path) -> Non
         model_builder=lambda name, kw: build_model(name, kw),
     )
     assert bundle_ok["verified"] is True
+
+
+def test_extract_peaks_from_heatmap_postprocessing() -> None:
+    pytest.importorskip("torch")
+    from constellation_detection.detection.dl import extract_peaks_from_heatmap
+
+    # Below threshold -> clean empty float32 array
+    low = np.full((16, 16), 0.1, dtype=np.float32)
+    empty = extract_peaks_from_heatmap(low, threshold=0.35)
+    assert empty.dtype == np.float32 and empty.shape == (0, 3)
+
+    # Sub-pixel offset decoding + min_dist_px NMS + max_candidates cap
+    hm = np.zeros((24, 24), dtype=np.float32)
+    hm[8, 10] = 0.90
+    hm[10, 11] = 0.70  # Within 4 px of (10.35, 7.75) -> suppressed when min_dist_px=4.0
+    hm[20, 20] = 0.60
+
+    off = np.zeros((2, 24, 24), dtype=np.float32)
+    off[0, 8, 10] = 0.35
+    off[1, 8, 10] = -0.25
+
+    peaks_all = extract_peaks_from_heatmap(hm, offset_map=off, threshold=0.3, min_dist_px=0.0)
+    assert peaks_all.shape == (3, 3)
+    assert np.allclose(peaks_all[0], [10.35, 7.75, 0.90], atol=1e-5)
+
+    peaks_nms = extract_peaks_from_heatmap(
+        hm, offset_map=off, threshold=0.3, min_dist_px=4.0, max_candidates=1
+    )
+    assert peaks_nms.shape == (1, 3)
+    assert np.allclose(peaks_nms[0], [10.35, 7.75, 0.90], atol=1e-5)
+
+
+def test_checkpoint_restoration_cpu_equivalence(tmp_path: Path) -> None:
+    torch = pytest.importorskip("torch")
+    from constellation_detection.artifacts import load_weights_artifact
+    from constellation_detection.detection.dl import build_model
+
+    torch.manual_seed(7)
+    model = build_model("star_center_unet_mini", {"in_channels": 1, "base_channels": 16})
+    model.eval()
+    probe = torch.randn(1, 1, 32, 32, dtype=torch.float32)
+    with torch.inference_mode():
+        expected = model(probe)
+
+    mgr = RunArtifactManager(runs_dir=tmp_path / "runs", run_id="p2_ckpt_restore_s7")
+    w_path = mgr.save_weights_artifact(
+        model,
+        model_name="star_center_unet_mini",
+        model_kwargs={"in_channels": 1, "base_channels": 16},
+        tag="best",
+    )
+    ts_path = mgr.save_training_state(
+        {
+            "epoch": 3,
+            "model_state_dict": {k: v.detach().cpu() for k, v in model.state_dict().items()},
+        },
+        tag="last",
+    )
+
+    loaded_w = load_weights_artifact(w_path)
+    restored = build_model(loaded_w["model_name"], loaded_w["model_kwargs"])
+    restored.load_state_dict(loaded_w["state_dict"], strict=True)
+    restored.eval()
+
+    loaded_ts = torch.load(ts_path, map_location="cpu", weights_only=True)
+    restored_from_ts = build_model("star_center_unet_mini", {"in_channels": 1, "base_channels": 16})
+    restored_from_ts.load_state_dict(loaded_ts["model_state_dict"], strict=True)
+    restored_from_ts.eval()
+
+    with torch.inference_mode():
+        out_w = restored(probe)
+        out_ts = restored_from_ts(probe)
+
+    for key in ("heatmap_logits", "offset"):
+        assert torch.allclose(out_w[key], expected[key], atol=1e-7)
+        assert torch.allclose(out_ts[key], expected[key], atol=1e-7)

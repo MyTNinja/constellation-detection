@@ -169,6 +169,8 @@ def verify_split_disjointness(manifest: dict[str, Any]) -> None:
         raise ValueError("Split manifest contains no samples.")
 
     seen_ids: set[str] = set()
+    seen_img_relpaths: set[str] = set()
+    seen_ann_relpaths: set[str] = set()
     groups_by_split: dict[str, set[str]] = {"train": set(), "val": set(), "test": set()}
     hashes_by_split: dict[str, set[str]] = {"train": set(), "val": set(), "test": set()}
 
@@ -181,9 +183,28 @@ def verify_split_disjointness(manifest: dict[str, Any]) -> None:
             raise ValueError(f"Duplicate image_id across manifest: {img_id!r}")
         seen_ids.add(img_id)
 
+        img_rel = str(sample.get("image_relpath", ""))
+        if img_rel in seen_img_relpaths:
+            raise ValueError(f"Duplicate image_relpath across manifest: {img_rel!r}")
+        if img_rel:
+            seen_img_relpaths.add(img_rel)
+
+        ann_rel = str(sample.get("annotation_relpath", ""))
+        if ann_rel in seen_ann_relpaths:
+            raise ValueError(
+                f"Duplicate annotation_relpath across manifest: {ann_rel!r}"
+            )
+        if ann_rel:
+            seen_ann_relpaths.add(ann_rel)
+
         groups_by_split[split_name].add(str(sample["group_id"]))
         if sample.get("image_sha256"):
-            hashes_by_split[split_name].add(str(sample["image_sha256"]))
+            img_sha = str(sample["image_sha256"])
+            if img_sha in hashes_by_split[split_name]:
+                raise ValueError(
+                    f"Duplicate image_sha256 within split {split_name!r}: {img_sha!r}"
+                )
+            hashes_by_split[split_name].add(img_sha)
 
     split_pairs = (("train", "val"), ("train", "test"), ("val", "test"))
     for s1, s2 in split_pairs:
