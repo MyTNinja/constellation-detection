@@ -61,3 +61,32 @@ def test_plot_detector_diagnostics_empty_detections_no_save() -> None:
 
     assert len(fig.axes) == 4
     assert saved_path is None
+
+
+def test_plot_detector_diagnostics_distinct_png_paths_for_same_stem(
+    tmp_path: Path,
+) -> None:
+    """Images with identical stems but different extensions write distinct diagnostic PNGs."""
+    image = np.zeros((100, 100, 3), dtype=np.uint8)
+    cv2.circle(image, (50, 50), radius=2, color=(255, 255, 255), thickness=-1)
+    result = detect_stars_adaptive_tophat(image)
+
+    viz_dir = tmp_path / "viz"
+    _, path_jpg = plot_detector_diagnostics(
+        image_bgr=image,
+        result=result,
+        output_dir=viz_dir,
+        image_name="field.jpg",
+    )
+    _, path_png = plot_detector_diagnostics(
+        image_bgr=image,
+        result=result,
+        output_dir=viz_dir,
+        image_name="field.png",
+    )
+
+    assert path_jpg is not None and path_png is not None
+    assert path_jpg != path_png
+    assert path_jpg.exists() and path_png.exists()
+    assert path_jpg.name == "field_jpg_CV2_AdaptiveTopHat_diagnostics.png"
+    assert path_png.name == "field_png_CV2_AdaptiveTopHat_diagnostics.png"

@@ -16,6 +16,9 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import os
+import tempfile
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -63,8 +66,42 @@ def download_phase1_samples(
             url,
             headers={"User-Agent": "constellation-detection-research/0.1 (Python urllib)"},
         )
-        with urllib.request.urlopen(req, timeout=30) as response, dest.open("wb") as fh:
-            fh.write(response.read())
+        tmp_path: Path | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="wb",
+                dir=target_dir,
+                prefix=f".{filename}.",
+                suffix=".part",
+                delete=False,
+            ) as tmp_fh:
+                tmp_path = Path(tmp_fh.name)
+                with urllib.request.urlopen(req, timeout=30) as response:
+                    headers = getattr(response, "headers", None)
+                    content_length_raw = (
+                        headers.get("Content-Length") if headers is not None else None
+                    )
+                    bytes_written = 0
+                    while True:
+                        chunk = response.read(65536)
+                        if not chunk:
+                            break
+                        tmp_fh.write(chunk)
+                        bytes_written += len(chunk)
+
+                    if content_length_raw is not None:
+                        expected_length = int(content_length_raw)
+                        if bytes_written != expected_length:
+                            raise urllib.error.ContentTooShortError(
+                                f"Incomplete download for {url}: "
+                                f"received {bytes_written} of {expected_length} bytes.",
+                                (str(dest), headers),
+                            )
+            os.replace(tmp_path, dest)
+        except BaseException:
+            if tmp_path is not None:
+                tmp_path.unlink(missing_ok=True)
+            raise
         saved_paths.append(dest)
 
     return saved_paths

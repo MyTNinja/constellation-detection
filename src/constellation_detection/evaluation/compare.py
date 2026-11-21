@@ -17,7 +17,10 @@ from constellation_detection.detection.traditional import (
     detect_stars_multiscale_dog,
 )
 from constellation_detection.evaluation.diagnostics import compute_star_annulus_snr
-from constellation_detection.evaluation.export import export_predictions_csv
+from constellation_detection.evaluation.export import (
+    build_image_output_stem,
+    export_predictions_csv,
+)
 from constellation_detection.image.preprocessing import to_grayscale
 
 __all__ = [
@@ -158,7 +161,7 @@ def evaluate_image_detectors(
         max_candidates=max_candidates,
     )
 
-    stem = Path(image_name).stem or "image"
+    image_id = build_image_output_stem(image_name)
     rows: list[dict[str, Any]] = []
 
     for res in results:
@@ -168,7 +171,7 @@ def evaluate_image_detectors(
 
         saved_csv = ""
         if predictions_dir is not None:
-            csv_name = f"{stem}_{detector_name}_predictions.csv"
+            csv_name = f"{image_id}_{detector_name}_predictions.csv"
             csv_path = export_predictions_csv(
                 stars_xyf,
                 Path(predictions_dir) / csv_name,

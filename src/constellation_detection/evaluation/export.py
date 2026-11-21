@@ -10,6 +10,7 @@ import pandas as pd
 
 __all__ = [
     "PREDICTION_CSV_COLUMNS",
+    "build_image_output_stem",
     "export_predictions_csv",
     "load_predictions_csv",
 ]
@@ -20,6 +21,31 @@ PREDICTION_CSV_COLUMNS: tuple[str, str, str, str] = (
     "y_px",
     "flux_score",
 )
+
+
+def build_image_output_stem(image_name: str) -> str:
+    """Build a deterministic output identifier that preserves the image extension.
+
+    Prevents filename collisions between images that share a base stem but have
+    different file extensions (e.g., ``field.jpg`` -> ``field_jpg`` and
+    ``field.png`` -> ``field_png``).
+
+    Args:
+        image_name: Image filename or path string.
+
+    Returns:
+        Deterministic identifier string safe for use as a filename prefix.
+    """
+    basename = Path(image_name).name.strip()
+    if not basename:
+        return "image"
+
+    path_obj = Path(basename)
+    stem = path_obj.stem
+    suffix = path_obj.suffix.lstrip(".").lower()
+    if suffix:
+        return f"{stem}_{suffix}"
+    return stem
 
 
 def export_predictions_csv(

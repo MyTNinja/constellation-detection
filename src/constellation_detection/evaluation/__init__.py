@@ -16,6 +16,7 @@ from constellation_detection.evaluation.diagnostics import (
 )
 from constellation_detection.evaluation.export import (
     PREDICTION_CSV_COLUMNS,
+    build_image_output_stem,
     export_predictions_csv,
     load_predictions_csv,
 )
@@ -25,6 +26,7 @@ __all__ = [
     "METRICS_COLUMNS",
     "PREDICTION_CSV_COLUMNS",
     "build_detector_leaderboard",
+    "build_image_output_stem",
     "compute_star_annulus_snr",
     "evaluate_image_detectors",
     "export_predictions_csv",

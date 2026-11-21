@@ -12,6 +12,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 
 from constellation_detection.evaluation.compare import resize_to_max_dim
+from constellation_detection.evaluation.export import build_image_output_stem
 from constellation_detection.image.preprocessing import to_grayscale
 
 __all__ = [
@@ -43,6 +44,7 @@ def plot_detector_diagnostics(
     result: dict[str, Any],
     output_dir: str | os.PathLike[str] | None = None,
     filename: str | None = None,
+    image_name: str | None = None,
     max_dim: int = 800,
     top_k_show: int = 35,
     connect_top_n: int = 14,
@@ -169,7 +171,13 @@ def plot_detector_diagnostics(
     if output_dir is not None:
         out_dir = Path(output_dir).expanduser().resolve()
         out_dir.mkdir(parents=True, exist_ok=True)
-        png_name = filename or f"{detector_name}_diagnostics.png"
+        if filename is not None:
+            png_name = filename
+        elif image_name is not None:
+            image_id = build_image_output_stem(image_name)
+            png_name = f"{image_id}_{detector_name}_diagnostics.png"
+        else:
+            png_name = f"{detector_name}_diagnostics.png"
         saved_path = out_dir / png_name
         fig.savefig(saved_path, bbox_inches="tight")
 

@@ -18,6 +18,7 @@ from constellation_detection.evaluation.compare import (
 )
 from constellation_detection.evaluation.export import (
     PREDICTION_CSV_COLUMNS,
+    build_image_output_stem,
     export_predictions_csv,
     load_predictions_csv,
 )
@@ -148,3 +149,44 @@ def test_build_detector_leaderboard_missing_columns_raises() -> None:
     bad_df = pd.DataFrame({"detector": ["global_threshold"]})
     with pytest.raises(ValueError, match="missing required columns"):
         build_detector_leaderboard(bad_df)
+
+
+def test_same_stem_different_extension_produces_distinct_csv_paths(
+    tmp_path: Path,
+) -> None:
+    """Images with identical stems (field.jpg vs field.png) do not overwrite each other's CSVs."""
+    assert build_image_output_stem("field.jpg") == "field_jpg"
+    assert build_image_output_stem("field.png") == "field_png"
+    assert build_image_output_stem("field.jpg") != build_image_output_stem("field.png")
+
+    starfield_jpg = _make_synthetic_starfield()
+    starfield_png = _make_synthetic_starfield()
+    # Add an extra bright star to field.png so CSV outputs are measurably distinct
+    cv2.circle(starfield_png, (30, 140), radius=3, color=(255, 255, 255), thickness=-1)
+
+    preds_dir = tmp_path / "predictions"
+    metrics_jpg, _, _ = evaluate_image_detectors(
+        image=starfield_jpg,
+        image_name="field.jpg",
+        predictions_dir=preds_dir,
+    )
+    metrics_png, _, _ = evaluate_image_detectors(
+        image=starfield_png,
+        image_name="field.png",
+        predictions_dir=preds_dir,
+    )
+
+    jpg_paths = set(metrics_jpg["saved_csv"])
+    png_paths = set(metrics_png["saved_csv"])
+    assert len(jpg_paths) == 3
+    assert len(png_paths) == 3
+    assert jpg_paths.isdisjoint(png_paths)
+
+    for csv_str in jpg_paths | png_paths:
+        csv_file = Path(csv_str)
+        assert csv_file.exists()
+        df = load_predictions_csv(csv_file)
+        assert tuple(df.columns) == PREDICTION_CSV_COLUMNS
+
+    assert all("field_jpg_" in Path(p).name for p in jpg_paths)
+    assert all("field_png_" in Path(p).name for p in png_paths)
