@@ -20,6 +20,13 @@ from constellation_detection.evaluation.export import (
     export_predictions_csv,
     load_predictions_csv,
 )
+from constellation_detection.evaluation.matching import (
+    compute_average_precision,
+    evaluate_phase1_baselines_on_manifest,
+    match_detections_to_ground_truth,
+    scale_working_stars_to_native,
+    select_best_threshold,
+)
 
 __all__ = [
     "LEADERBOARD_COLUMNS",
@@ -27,11 +34,16 @@ __all__ = [
     "PREDICTION_CSV_COLUMNS",
     "build_detector_leaderboard",
     "build_image_output_stem",
+    "compute_average_precision",
     "compute_star_annulus_snr",
     "evaluate_image_detectors",
+    "evaluate_phase1_baselines_on_manifest",
     "export_predictions_csv",
     "load_predictions_csv",
+    "match_detections_to_ground_truth",
     "resize_to_max_dim",
     "run_all_detectors",
+    "scale_working_stars_to_native",
+    "select_best_threshold",
     "summarize_detector_result",
 ]

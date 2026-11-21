@@ -216,6 +216,26 @@ def _sample_tensor_values(flat_tensor: Any, max_samples: int = 512) -> tuple[lis
     return indices, values
 
 
+def _flatten_model_output(output: Any, torch_mod: Any) -> tuple[list[int], Any]:
+    """Flatten Tensor or dict[str, Tensor] output deterministically for parity checks."""
+    if isinstance(output, torch_mod.Tensor):
+        return list(output.shape), output.detach().cpu().to(torch_mod.float32).reshape(-1)
+    if isinstance(output, dict) and output:
+        parts = []
+        shapes: list[int] = []
+        for key in sorted(output.keys()):
+            val = output[key]
+            if not isinstance(val, torch_mod.Tensor):
+                raise TypeError(f"Expected Tensor for output[{key!r}], got {type(val).__name__}.")
+            if not shapes:
+                shapes = list(val.shape)
+            parts.append(val.detach().cpu().to(torch_mod.float32).reshape(-1))
+        return shapes, torch_mod.cat(parts, dim=0)
+    raise TypeError(
+        "Parity reference expects model(input) to return a Tensor or dict of Tensors."
+    )
+
+
 def verify_parity_reference(
     model: Any,
     run_dir: str | os.PathLike[str],
@@ -245,12 +265,7 @@ def verify_parity_reference(
     cpu_model.eval()
     with torch.inference_mode():
         output = cpu_model(dummy_input)
-        if not isinstance(output, torch.Tensor):
-            raise TypeError(
-                "verify_parity_reference expects model(input) to return a Tensor."
-            )
-        actual_shape = list(output.shape)
-        flat = output.detach().cpu().to(torch.float32).reshape(-1)
+        actual_shape, flat = _flatten_model_output(output, torch)
         actual_values = [float(flat[idx].item()) for idx in sample_indices]
 
     shape_match = actual_shape == expected_output_shape
@@ -443,11 +458,7 @@ class RunArtifactManager:
             model.eval()
             with torch.inference_mode():
                 output = model(dummy_cpu.to(original_device))
-                if not isinstance(output, torch.Tensor):
-                    raise TypeError(
-                        "write_parity_reference expects model(input) to return a Tensor."
-                    )
-                flat = output.detach().cpu().to(torch.float32).reshape(-1)
+                out_shape, flat = _flatten_model_output(output, torch)
                 indices, values = _sample_tensor_values(flat)
                 payload = {
                     "schema_version": ARTIFACT_SCHEMA_VERSION,
@@ -455,7 +466,7 @@ class RunArtifactManager:
                     "input_shape": [int(x) for x in input_shape],
                     "dtype": "float32",
                     "source_device": str(original_device),
-                    "output_shape": [int(x) for x in output.shape],
+                    "output_shape": out_shape,
                     "sample_indices": indices,
                     "sample_values": values,
                 }

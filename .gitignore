@@ -51,7 +51,7 @@ client_secret*.json
 
 # Generated datasets (stored persistently in Google Drive or local unversioned storage)
 data/
-datasets/
+/datasets/
 *.tfrecord
 *.h5
 *.hdf5
