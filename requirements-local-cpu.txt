@@ -1,0 +1,17 @@
+# Local Windows CPU environment manifest for Constellation Detection
+# Target: Python 3.13 (Windows AMD64, CPU-only, no CUDA / no GPU required)
+#
+# Recommended reproducible install sequence:
+#   venv\Scripts\python.exe -m pip install --upgrade pip
+#   venv\Scripts\python.exe -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+#   venv\Scripts\python.exe -m pip install -e ".[dev]" ipykernel
+#
+# Or install directly via this manifest:
+#   venv\Scripts\python.exe -m pip install -r requirements-local-cpu.txt
+
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+torch>=2.0
+torchvision>=0.15
+-e .[dev]
+ipykernel>=7.0
